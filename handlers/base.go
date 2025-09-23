@@ -11,10 +11,12 @@ func New() *mux.Router {
 
 	// Routes
 	r.HandleFunc("/", homeHandler).Methods("GET")
+	r.HandleFunc("/items/", listItems).Methods("GET")
+	r.HandleFunc("/items/", createItem).Methods("POST")
 
 	return r
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/list/", http.StatusTemporaryRedirect)
+	http.Redirect(w, r, "/item/", http.StatusTemporaryRedirect)
 }
