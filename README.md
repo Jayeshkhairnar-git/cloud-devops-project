@@ -24,3 +24,9 @@ curl -d '{"Name":"Oil", "Description":"Should be nice!"}' -H "Content-Type: appl
 ```
 curl -v http://localhost:3000/items/
 ```
+
+### Get a single item
+
+```
+curl -v http://localhost:3000/items/{ID}
+```

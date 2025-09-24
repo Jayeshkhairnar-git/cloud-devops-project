@@ -14,6 +14,8 @@ func New() *mux.Router {
 	r.HandleFunc("/items/", listItems).Methods("GET")
 	r.HandleFunc("/items/", createItem).Methods("POST")
 	r.HandleFunc("/items/{ID}", getItem).Methods("GET")
+	r.HandleFunc("/items/{ID}", updateItem).Methods("PUT")
+	r.HandleFunc("/items/{ID}", deleteItem).Methods("DELETE")
 
 	return r
 }

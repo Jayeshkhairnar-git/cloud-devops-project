@@ -51,6 +51,19 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, items[idx])
 }
 
+func updateItem(w http.ResponseWriter, r *http.Request) {
+}
+
+func deleteItem(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	idx := slices.IndexFunc(items, func(i Item) bool { return i.ID == vars["ID"] })
+	if idx < 0 {
+		respondWithError(w, http.StatusNotFound, "")
+		return
+	}
+	items = slices.Delete(items, idx, 1)
+}
+
 func respondWithError(w http.ResponseWriter, code int, message string) {
 	respondWithJSON(w, code, map[string]string{"error": message})
 }
