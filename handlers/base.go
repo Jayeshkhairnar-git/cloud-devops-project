@@ -13,6 +13,7 @@ func New() *mux.Router {
 	r.HandleFunc("/", homeHandler).Methods("GET")
 	r.HandleFunc("/items/", listItems).Methods("GET")
 	r.HandleFunc("/items/", createItem).Methods("POST")
+	r.HandleFunc("/items/{ID}", getItem).Methods("GET")
 
 	return r
 }

@@ -3,8 +3,10 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"slices"
 
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 )
 
 type NewItemRequest struct {
@@ -37,6 +39,16 @@ func createItem(w http.ResponseWriter, r *http.Request) {
 	items = append(items, item)
 
 	respondWithJSON(w, http.StatusCreated, item)
+}
+
+func getItem(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	idx := slices.IndexFunc(items, func(i Item) bool { return i.ID == vars["ID"] })
+	if idx < 0 {
+		respondWithError(w, http.StatusNotFound, "")
+		return
+	}
+	respondWithJSON(w, http.StatusOK, items[idx])
 }
 
 func respondWithError(w http.ResponseWriter, code int, message string) {
