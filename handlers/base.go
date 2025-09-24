@@ -4,18 +4,23 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/hs-heilbronn-devsecops/acetlisto/stores"
 )
 
 func New() *mux.Router {
 	r := mux.NewRouter()
 
+	s := stores.NewMemoryItemStore()
+
+	c := NewItemHandler(s)
+
 	// Routes
 	r.HandleFunc("/", homeHandler).Methods("GET")
-	r.HandleFunc("/items/", listItems).Methods("GET")
-	r.HandleFunc("/items/", createItem).Methods("POST")
-	r.HandleFunc("/items/{ID}", getItem).Methods("GET")
-	r.HandleFunc("/items/{ID}", updateItem).Methods("PUT")
-	r.HandleFunc("/items/{ID}", deleteItem).Methods("DELETE")
+	r.HandleFunc("/items/", c.listItems).Methods("GET")
+	r.HandleFunc("/items/", c.createItem).Methods("POST")
+	r.HandleFunc("/items/{ID}", c.getItem).Methods("GET")
+	r.HandleFunc("/items/{ID}", c.updateItem).Methods("PUT")
+	r.HandleFunc("/items/{ID}", c.deleteItem).Methods("DELETE")
 
 	return r
 }

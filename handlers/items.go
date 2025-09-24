@@ -3,39 +3,31 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"slices"
 
-	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/hs-heilbronn-devsecops/acetlisto/stores"
 )
 
-type NewItemRequest struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-}
-
-type Item struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-}
-
 type ItemHandler struct {
-	items []Item
+	store stores.ItemStore
 }
 
-func NewItemHandler() *ItemHandler {
+func NewItemHandler(store stores.ItemStore) *ItemHandler {
 	return &ItemHandler{
-		items: []Item{},
+		store: store,
 	}
 }
 
 func (i *ItemHandler) listItems(w http.ResponseWriter, r *http.Request) {
-	respondWithJSON(w, http.StatusOK, i.items)
+	items, err := i.store.GetAllItems()
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not load items")
+	}
+	respondWithJSON(w, http.StatusOK, items)
 }
 
 func (i *ItemHandler) createItem(w http.ResponseWriter, r *http.Request) {
-	var request NewItemRequest
+	var request stores.CreateItemRequest
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&request); err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
@@ -43,24 +35,28 @@ func (i *ItemHandler) createItem(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	item := Item{ID: uuid.NewString(), Name: request.Name, Description: request.Description}
-	i.items = append(i.items, item)
+	item, err := i.store.CreateItem(request)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not store item")
+	}
 
 	respondWithJSON(w, http.StatusCreated, item)
 }
 
 func (i *ItemHandler) getItem(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	idx := slices.IndexFunc(i.items, func(i Item) bool { return i.ID == vars["ID"] })
-	if idx < 0 {
+	item, err := i.store.GetItem(vars["ID"])
+
+	if err != nil {
 		respondWithError(w, http.StatusNotFound, "")
 		return
 	}
-	respondWithJSON(w, http.StatusOK, i.items[idx])
+
+	respondWithJSON(w, http.StatusOK, item)
 }
 
 func (i *ItemHandler) updateItem(w http.ResponseWriter, r *http.Request) {
-	var request NewItemRequest
+	var request stores.CreateItemRequest
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&request); err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
@@ -69,27 +65,18 @@ func (i *ItemHandler) updateItem(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	vars := mux.Vars(r)
-	idx := slices.IndexFunc(i.items, func(i Item) bool { return i.ID == vars["ID"] })
-	if idx < 0 {
+	item, err := i.store.UpdateItem(vars["ID"], request)
+	if err != nil {
 		respondWithError(w, http.StatusNotFound, "")
 		return
 	}
 
-	i.items[idx] = Item{
-		ID:          vars["ID"],
-		Name:        request.Name,
-		Description: request.Description,
-	}
+	respondWithJSON(w, http.StatusOK, item)
 }
 
 func (i *ItemHandler) deleteItem(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	idx := slices.IndexFunc(i.items, func(i Item) bool { return i.ID == vars["ID"] })
-	if idx < 0 {
-		respondWithError(w, http.StatusNotFound, "")
-		return
-	}
-	i.items = slices.Delete(i.items, idx, 1)
+	i.store.DeleteItem(vars["ID"])
 }
 
 func respondWithError(w http.ResponseWriter, code int, message string) {
