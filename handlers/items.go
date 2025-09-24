@@ -20,13 +20,21 @@ type Item struct {
 	Description string `json:"description"`
 }
 
-var items = []Item{}
-
-func listItems(w http.ResponseWriter, r *http.Request) {
-	respondWithJSON(w, http.StatusOK, items)
+type ItemHandler struct {
+	items []Item
 }
 
-func createItem(w http.ResponseWriter, r *http.Request) {
+func NewItemHandler() *ItemHandler {
+	return &ItemHandler{
+		items: []Item{},
+	}
+}
+
+func (i *ItemHandler) listItems(w http.ResponseWriter, r *http.Request) {
+	respondWithJSON(w, http.StatusOK, i.items)
+}
+
+func (i *ItemHandler) createItem(w http.ResponseWriter, r *http.Request) {
 	var request NewItemRequest
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&request); err != nil {
@@ -36,22 +44,22 @@ func createItem(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	item := Item{ID: uuid.NewString(), Name: request.Name, Description: request.Description}
-	items = append(items, item)
+	i.items = append(i.items, item)
 
 	respondWithJSON(w, http.StatusCreated, item)
 }
 
-func getItem(w http.ResponseWriter, r *http.Request) {
+func (i *ItemHandler) getItem(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	idx := slices.IndexFunc(items, func(i Item) bool { return i.ID == vars["ID"] })
+	idx := slices.IndexFunc(i.items, func(i Item) bool { return i.ID == vars["ID"] })
 	if idx < 0 {
 		respondWithError(w, http.StatusNotFound, "")
 		return
 	}
-	respondWithJSON(w, http.StatusOK, items[idx])
+	respondWithJSON(w, http.StatusOK, i.items[idx])
 }
 
-func updateItem(w http.ResponseWriter, r *http.Request) {
+func (i *ItemHandler) updateItem(w http.ResponseWriter, r *http.Request) {
 	var request NewItemRequest
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&request); err != nil {
@@ -61,27 +69,27 @@ func updateItem(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	vars := mux.Vars(r)
-	idx := slices.IndexFunc(items, func(i Item) bool { return i.ID == vars["ID"] })
+	idx := slices.IndexFunc(i.items, func(i Item) bool { return i.ID == vars["ID"] })
 	if idx < 0 {
 		respondWithError(w, http.StatusNotFound, "")
 		return
 	}
 
-	items[idx] = Item{
+	i.items[idx] = Item{
 		ID:          vars["ID"],
 		Name:        request.Name,
 		Description: request.Description,
 	}
 }
 
-func deleteItem(w http.ResponseWriter, r *http.Request) {
+func (i *ItemHandler) deleteItem(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	idx := slices.IndexFunc(items, func(i Item) bool { return i.ID == vars["ID"] })
+	idx := slices.IndexFunc(i.items, func(i Item) bool { return i.ID == vars["ID"] })
 	if idx < 0 {
 		respondWithError(w, http.StatusNotFound, "")
 		return
 	}
-	items = slices.Delete(items, idx, 1)
+	i.items = slices.Delete(i.items, idx, 1)
 }
 
 func respondWithError(w http.ResponseWriter, code int, message string) {
