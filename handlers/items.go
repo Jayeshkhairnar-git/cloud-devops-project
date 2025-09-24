@@ -52,6 +52,26 @@ func getItem(w http.ResponseWriter, r *http.Request) {
 }
 
 func updateItem(w http.ResponseWriter, r *http.Request) {
+	var request NewItemRequest
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&request); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+	defer r.Body.Close()
+
+	vars := mux.Vars(r)
+	idx := slices.IndexFunc(items, func(i Item) bool { return i.ID == vars["ID"] })
+	if idx < 0 {
+		respondWithError(w, http.StatusNotFound, "")
+		return
+	}
+
+	items[idx] = Item{
+		ID:          vars["ID"],
+		Name:        request.Name,
+		Description: request.Description,
+	}
 }
 
 func deleteItem(w http.ResponseWriter, r *http.Request) {
