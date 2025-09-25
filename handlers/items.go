@@ -33,7 +33,7 @@ func (i *ItemHandler) createItem(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
-	defer r.Body.Close()
+	defer deferredClose(r.Body)
 
 	item, err := i.store.CreateItem(request)
 	if err != nil {
@@ -62,7 +62,7 @@ func (i *ItemHandler) updateItem(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
-	defer r.Body.Close()
+	defer deferredClose(r.Body)
 
 	vars := mux.Vars(r)
 	item, err := i.store.UpdateItem(vars["ID"], request)
@@ -76,17 +76,8 @@ func (i *ItemHandler) updateItem(w http.ResponseWriter, r *http.Request) {
 
 func (i *ItemHandler) deleteItem(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	i.store.DeleteItem(vars["ID"])
-}
-
-func respondWithError(w http.ResponseWriter, code int, message string) {
-	respondWithJSON(w, code, map[string]string{"error": message})
-}
-
-func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
-	response, _ := json.Marshal(payload)
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	w.Write(response)
+	err := i.store.DeleteItem(vars["ID"])
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "")
+	}
 }
