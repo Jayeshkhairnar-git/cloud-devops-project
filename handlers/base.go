@@ -27,7 +27,7 @@ func New(store stores.ItemStore) *mux.Router {
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/item/", http.StatusTemporaryRedirect)
+	http.Redirect(w, r, "/items/", http.StatusTemporaryRedirect)
 }
 func respondWithError(w http.ResponseWriter, code int, message string) {
 	respondWithJSON(w, code, map[string]string{"error": message})
