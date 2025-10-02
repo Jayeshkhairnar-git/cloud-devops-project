@@ -153,4 +153,77 @@ func TestUpdateItemInvalidPayload(t *testing.T) {
 	response := executeRequest(router, req)
 
 	assert.Equal(t, http.StatusBadRequest, response.Code)
+
+}
+
+func TestListItemsStoreError(t *testing.T) {
+	// Create a mock store that returns an error on GetAllItems
+	store := &mockItemStore{
+		getAllItemsFunc: func() ([]stores.Item, error) {
+			return nil, assert.AnError
+		},
+	}
+	router := New(store)
+
+	req, _ := http.NewRequest("GET", "/items/", nil)
+	response := executeRequest(router, req)
+
+	assert.Equal(t, http.StatusInternalServerError, response.Code)
+}
+
+func TestCreateItemStoreError(t *testing.T) {
+	// Create a mock store that returns an error on CreateItem
+	store := &mockItemStore{
+		createItemFunc: func(req stores.CreateItemRequest) (*stores.Item, error) {
+			return nil, assert.AnError
+		},
+	}
+	router := New(store)
+
+	payload := `{"name":"New Item","description":"This is a new item"}`
+	req, _ := http.NewRequest("POST", "/items/", http.NoBody)
+	req.Body = io.NopCloser(strings.NewReader(payload))
+	response := executeRequest(router, req)
+
+	assert.Equal(t, http.StatusInternalServerError, response.Code)
+}
+
+// mockItemStore implements stores.ItemStore for testing error cases
+type mockItemStore struct {
+	getAllItemsFunc func() ([]stores.Item, error)
+	createItemFunc  func(stores.CreateItemRequest) (*stores.Item, error)
+	getItemFunc     func(string) (*stores.Item, error)
+	updateItemFunc  func(string, stores.CreateItemRequest) (*stores.Item, error)
+	deleteItemFunc  func(string) error
+}
+
+func (m *mockItemStore) GetAllItems() ([]stores.Item, error) {
+	if m.getAllItemsFunc != nil {
+		return m.getAllItemsFunc()
+	}
+	return nil, nil
+}
+func (m *mockItemStore) CreateItem(req stores.CreateItemRequest) (*stores.Item, error) {
+	if m.createItemFunc != nil {
+		return m.createItemFunc(req)
+	}
+	return nil, nil
+}
+func (m *mockItemStore) GetItem(id string) (*stores.Item, error) {
+	if m.getItemFunc != nil {
+		return m.getItemFunc(id)
+	}
+	return nil, nil
+}
+func (m *mockItemStore) UpdateItem(id string, req stores.CreateItemRequest) (*stores.Item, error) {
+	if m.updateItemFunc != nil {
+		return m.updateItemFunc(id, req)
+	}
+	return nil, nil
+}
+func (m *mockItemStore) DeleteItem(id string) error {
+	if m.deleteItemFunc != nil {
+		return m.deleteItemFunc(id)
+	}
+	return nil
 }
