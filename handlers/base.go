@@ -10,12 +10,10 @@ import (
 	"github.com/hs-heilbronn-devsecops/acetlisto/stores"
 )
 
-func New() *mux.Router {
+func New(store stores.ItemStore) *mux.Router {
 	r := mux.NewRouter()
 
-	s := stores.NewMemoryItemStore()
-
-	c := NewItemHandler(s)
+	c := NewItemHandler(store)
 
 	// Routes
 	r.HandleFunc("/", homeHandler).Methods("GET")
