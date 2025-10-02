@@ -39,3 +39,11 @@ func TestCreateAndLoad(t *testing.T) {
 	assert.NotNil(t, loadedItem)
 	assert.Equal(t, loadedItem, item)
 }
+
+func TestGetItemForNonExistingID(t *testing.T) {
+	m := NewMemoryItemStore()
+
+	loadedItem, err := m.GetItem("dummy")
+	assert.Error(t, err)
+	assert.Nil(t, loadedItem)
+}
