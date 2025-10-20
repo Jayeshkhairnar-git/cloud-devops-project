@@ -80,3 +80,28 @@ func TestUpdateItemForNonExistingID(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, updatedItem)
 }
+
+func TestDeleteItem(t *testing.T) {
+	m := NewMemoryItemStore()
+
+	item, _ := m.CreateItem(CreateItemRequest{
+		Name:        "Oil",
+		Description: "Some beautiful oil.",
+	})
+
+	items, _ := m.GetAllItems()
+	assert.Equal(t, 1, len(items))
+
+	err := m.DeleteItem(item.ID)
+	assert.NoError(t, err)
+
+	items, _ = m.GetAllItems()
+	assert.Equal(t, 0, len(items))
+}
+
+func TestDeleteItemForNonExistingID(t *testing.T) {
+	m := NewMemoryItemStore()
+
+	err := m.DeleteItem("dummy")
+	assert.Error(t, err)
+}

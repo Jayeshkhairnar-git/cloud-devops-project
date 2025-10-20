@@ -10,12 +10,10 @@ import (
 	"github.com/hs-heilbronn-devsecops/acetlisto/stores"
 )
 
-func New() *mux.Router {
+func New(store stores.ItemStore) *mux.Router {
 	r := mux.NewRouter()
 
-	s := stores.NewMemoryItemStore()
-
-	c := NewItemHandler(s)
+	c := NewItemHandler(store)
 
 	// Routes
 	r.HandleFunc("/", homeHandler).Methods("GET")
@@ -29,7 +27,7 @@ func New() *mux.Router {
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/item/", http.StatusTemporaryRedirect)
+	http.Redirect(w, r, "/items/", http.StatusTemporaryRedirect)
 }
 func respondWithError(w http.ResponseWriter, code int, message string) {
 	respondWithJSON(w, code, map[string]string{"error": message})
