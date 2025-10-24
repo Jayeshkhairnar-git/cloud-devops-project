@@ -1,4 +1,4 @@
-name: Go Application
+name: Build Go Application
 
 on:
   push:
@@ -9,44 +9,34 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-
+      
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
         go-version: '1.24'
-
+        
     - name: Cache Go modules
       uses: actions/cache@v3
       with:
         path: |
           ~/.cache/go-build
           ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('/go.sum') }}
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
-
+          
     - name: Download dependencies
       run: go mod download
-
-    - name: Run Linter
-      uses: golangci/golangci-lint-action@v6
-      with:
-        version: latest
-
-    - name: Run Tests with Coverage
-      run: |
-        go test ./... -v -covermode=atomic -coverprofile=coverage.out
-        go tool cover -func=coverage.out
-
+      
     - name: Build binary
       run: go build -v -o ./bin/app ./cmd/
-
+      
     - name: Upload binary artifact
       uses: actions/upload-artifact@v4
       with:
         name: go-binary
-        path: ./bin/app
+        path: ./bin/app
