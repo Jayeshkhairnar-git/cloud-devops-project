@@ -1,45 +1,52 @@
-name: Go Build, Lint and Test
+name: Go Application
 
 on:
+  push:
+    branches: [ main, develop ]
   pull_request:
     branches: [ main ]
 
 jobs:
-  build-lint-test:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.22'
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.24'
 
-      - name: Install dependencies
-        run: go mod tidy
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
 
-      # ----- LINTING STEP (runs first for fast feedback) -----
-      # --- LINTING STEP (runs first for fast feedback) ---
-      - name: Run GolangCI-Lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
-          args: --timeout 5m
+    - name: Download dependencies
+      run: go mod download
 
-      # --- TESTING STEP ---
-      - name: Run Tests with Coverage
-        run: go test ./... -v -coverprofile=coverage.out
+    - name: Run Linter
+      uses: golangci/golangci-lint-action@v6
+      with:
+        version: latest
 
-      # --- COVERAGE SUMMARY ---
-      - name: Display Coverage Results
-        run: go tool cover -func=coverage.out
+    - name: Run Tests with Coverage
+      run: |
+        go test ./... -v -covermode=atomic -coverprofile=coverage.out
+        go tool cover -func=coverage.out
 
-      # --- SAVE COVERAGE FILE AS ARTIFACT ---
-      - name: Upload Coverage Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage.out
-          path: coverage.out
+    - name: Build binary
+      run: go build -v -o ./bin/app ./cmd/
+
+    - name: Upload binary artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: go-binary
+        path: ./bin/app
