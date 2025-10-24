@@ -1,42 +1,43 @@
-name: Build Go Application
+name: Go Build, Lint and Test
 
 on:
-  push:
-    branches: [ main, develop ]
   pull_request:
     branches: [ main ]
 
 jobs:
-  build:
+  build-lint-test:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.24'
-        
-    - name: Cache Go modules
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.cache/go-build
-          ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
-          
-    - name: Download dependencies
-      run: go mod download
-      
-    - name: Build binary
-      run: go build -v -o ./bin/app ./cmd/
-      
-    - name: Upload binary artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: go-binary
-        path: ./bin/app
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Install dependencies
+        run: go mod tidy
+
+      # --- LINTING STEP (runs first for fast feedback) ---
+      - name: Run GolangCI-Lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          args: --timeout 5m
+
+      # --- TESTING STEP ---
+      - name: Run Tests with Coverage
+        run: go test ./... -v -coverprofile=coverage.out
+
+      # --- COVERAGE SUMMARY ---
+      - name: Display Coverage Results
+        run: go tool cover -func=coverage.out
+
+      # --- SAVE COVERAGE FILE AS ARTIFACT ---
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.out
