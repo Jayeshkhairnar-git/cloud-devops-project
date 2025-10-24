@@ -21,6 +21,7 @@ jobs:
         run: go mod tidy
 
       # ----- LINTING STEP (runs first for fast feedback) -----
+      # --- LINTING STEP (runs first for fast feedback) ---
       - name: Run GolangCI-Lint
         uses: golangci/golangci-lint-action@v6
         with:
@@ -41,3 +42,4 @@ jobs:
         with:
           name: coverage-report
           path: coverage.out
+          path: coverage.out
