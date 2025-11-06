@@ -96,7 +96,7 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ Jayeshkhairnar-git }}
+          username: ${{ github.actor }}
           password: ${{ secrets.GHCR_PAT }}
 
       # Build and push Docker image
