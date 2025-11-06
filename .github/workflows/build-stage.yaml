@@ -89,4 +89,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ghcr.io/hs-heilbronn-devsecops/go-app:${{ github.sha }}
+          tags: |
+            ghcr.io/${{ github.actor }}/go-app:${{ github.sha }}
+            ghcr.io/${{ github.actor }}/go-app:latest
+
