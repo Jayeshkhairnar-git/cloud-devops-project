@@ -1,5 +1,5 @@
-name: Go Application
-
+name: Build, Test,Application  DeployDockerfile CloudCommanders
+#Instructions
 on:
   push:
     branches: [ main, develop ]
@@ -9,44 +9,86 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.24'
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
 
-    - name: Cache Go modules
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.cache/go-build
-          ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
-    - name: Download dependencies
-      run: go mod download
+      - name: Download dependencies
+        run: go mod download
 
-    - name: Run Linter
-      uses: golangci/golangci-lint-action@v6
-      with:
-        version: latest
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
 
-    - name: Run Tests with Coverage
-      run: |
-        go test ./... -v -covermode=atomic -coverprofile=coverage.out
-        go tool cover -func=coverage.out
+      - name: Run Tests with Coverage
+        run: |
+          go test ./... -v -covermode=atomic -coverprofile=coverage.out
+          go tool cover -func=coverage.out
 
-    - name: Build binary
-      run: go build -v -o ./bin/app ./cmd/
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.out
+          fail_ci_if_error: true
 
-    - name: Upload binary artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: go-binary
-        path: ./bin/app
+      - name: Install and Run GoSec
+        run: |
+          echo "Installing GoSec..."
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          echo "Running GoSec..."
+          $HOME/go/bin/gosec ./... || true
+        continue-on-error: true
+
+      - name: Install and Run Govulncheck
+        run: |
+          echo "Installing Govulncheck..."
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          echo "Running Govulncheck..."
+          $HOME/go/bin/govulncheck ./... || true
+        continue-on-error: true
+
+      - name: Build Go binary
+        run: |
+          mkdir -p ./bin
+          go build -v -o ./bin/app ./cmd/
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-binary
+          path: ./bin/app
+
+      - name: Login to GitHub Container Registry
+        if: always()
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Docker image
+        if: always()
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ghcr.io/hs-heilbronn-devsecops/go-app:${{ github.sha }}
