@@ -1,31 +1,25 @@
-name: Build, Test, and Deploy Docker Image
+name: Deploy Go Application
 
+#Instruction for adding docker
 on:
   push:
     branches: [ main, develop ]
   pull_request:
     branches: [ main ]
 
-permissions:
-  contents: read
-  packages: write
-
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Set up Go
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: '1.24'
 
-      # Cache Go modules
       - name: Cache Go modules
         uses: actions/cache@v3
         with:
@@ -36,23 +30,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
-      # Download dependencies
       - name: Download dependencies
         run: go mod download
 
-      # Run GolangCI-Lint
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
           version: latest
 
-      # Run tests with coverage
       - name: Run Tests with Coverage
         run: |
           go test ./... -v -covermode=atomic -coverprofile=coverage.out
           go tool cover -func=coverage.out
 
-      # Upload coverage to Codecov
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
@@ -60,7 +50,6 @@ jobs:
           files: coverage.out
           fail_ci_if_error: true
 
-      # Install and run GoSec
       - name: Install and Run GoSec
         run: |
           echo "Installing GoSec..."
@@ -69,7 +58,6 @@ jobs:
           $HOME/go/bin/gosec ./... || true
         continue-on-error: true
 
-      # Install and run Govulncheck
       - name: Install and Run Govulncheck
         run: |
           echo "Installing Govulncheck..."
@@ -78,34 +66,30 @@ jobs:
           $HOME/go/bin/govulncheck ./... || true
         continue-on-error: true
 
-      # Build Go binary
       - name: Build Go binary
         run: |
           mkdir -p ./bin
           go build -v -o ./bin/app ./cmd/
 
-      # Upload binary artifact
       - name: Upload binary artifact
         uses: actions/upload-artifact@v4
         with:
           name: go-binary
           path: ./bin/app
 
-      # Login to GitHub Container Registry using personal token (or GITHUB_TOKEN for personal namespace)
       - name: Login to GitHub Container Registry
+        if: always()
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Build and push Docker image
       - name: Build and Push Docker image
+        if: always()
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
           push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/go-app:${{ github.sha }}
-            ghcr.io/${{ github.repository_owner }}/go-app:latest
+          tags: ghcr.io/hs-heilbronn-devsecops/go-app:${{ github.sha }}
