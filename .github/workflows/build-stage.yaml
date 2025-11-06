@@ -1,4 +1,4 @@
-name: Deploy Go Application
+name: Add DockerImage, workflows, SNYK, CODECOV
 
 on:
   push:
@@ -54,12 +54,6 @@ jobs:
           files: coverage.out
           fail_ci_if_error: true
 
-      - name: Install and Run GoSec
-        run: |
-          go install github.com/securego/gosec/v2/cmd/gosec@latest
-          $HOME/go/bin/gosec ./... || true
-        continue-on-error: true
-
       - name: Install and Run Govulncheck
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@latest
@@ -94,3 +88,14 @@ jobs:
             ghcr.io/jayeshkhairnar-git/go-app:${{ github.sha }}
             ghcr.io/jayeshkhairnar-git/go-app:latest
 
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
+      - name: Authenticate Snyk
+        run: snyk auth ${{ secrets.SNYK_TOKEN }}
+
+      - name: Scan Go Project with Snyk
+        run: snyk test --all-projects --severity-threshold=medium
+
+      - name: Scan Docker Image with Snyk
+        run: snyk container test ghcr.io/jayeshkhairnar-git/go-app:latest --severity-threshold=medium
