@@ -1,4 +1,4 @@
-name: Deploy Dcker Image to Cloud_Run
+name: Deploy Dcker Image to Cloud Run
 
 on:
   push:
