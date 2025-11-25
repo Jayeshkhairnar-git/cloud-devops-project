@@ -33,13 +33,13 @@ jobs:
 
     - name: Build Docker image
       run: |
-        IMAGE="europe-west1-docker.pkg.dev/hs-heilbronn-devsecops/student-images/ws25-cloudcommanders-acetlisto:latest"
+        IMAGE="europe-west1-docker.pkg.dev/hs-heilbronn-devsecops/github-images/ws25-cloudcommanders-acetlisto:latest"
         docker build -t $IMAGE .
 
 
     - name: Push Docker image
       run: |
-        IMAGE="europe-west1-docker.pkg.dev/hs-heilbronn-devsecops/student-images/ws25-cloudcommanders-acetlisto:latest"
+        IMAGE="europe-west1-docker.pkg.dev/hs-heilbronn-devsecops/github-images/ws25-cloudcommanders-acetlisto:latest"
         docker push $IMAGE
 
 
@@ -47,5 +47,5 @@ jobs:
       uses: google-github-actions/deploy-cloudrun@v2
       with:
         service: "ws25-cloudcommanders-acetlisto"
-        image: "europe-west1-docker.pkg.dev/hs-heilbronn-devsecops/student-images/ws25-cloudcommanders-acetlisto:latest"
+        image: "europe-west1-docker.pkg.dev/hs-heilbronn-devsecops/github-images/ws25-cloudcommanders-acetlisto:latest"
         region: "europe-west1"
