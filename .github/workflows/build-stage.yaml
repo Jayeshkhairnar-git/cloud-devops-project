@@ -1,4 +1,4 @@
-name: Add DeckerImage, Workflows, SNYK, CODECOV
+name: Build, Docker Image and Deploy cloud run
 
 on:
   push:
@@ -9,10 +9,11 @@ on:
 permissions:
   contents: read
   packages: write
+  id-token: write
 
 jobs:
-  build:
-    name: Build, Test, and Deploy Go Application
+  build-test-scan:
+    name: Build, Test, Scan, and Push to GHCR
     runs-on: ubuntu-latest
 
     steps:
@@ -78,7 +79,7 @@ jobs:
           username: jayeshkhairnar-git
           password: ${{ secrets.GHCR_PAT }}
 
-      - name: Build and Push Docker Image
+      - name: Build and Push Docker Image to GHCR
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -99,3 +100,41 @@ jobs:
 
       - name: Scan Docker Image with Snyk
         run: snyk container test ghcr.io/jayeshkhairnar-git/go-app:latest --severity-threshold=medium
+
+
+  deploy-cloudrun:
+    name: Deploy to Google Cloud Run
+    needs: build-test-scan
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/70756149774/locations/global/workloadIdentityPools/github-actions/providers/github-repos'
+          service_account: 'ws25-student@hs-heilbronn-devsecops.iam.gserviceaccount.com'
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker europe-west3-docker.pkg.dev --quiet
+
+      - name: Build Docker image for Cloud Run
+        run: |
+          IMAGE="europe-west3-docker.pkg.dev/hs-heilbronn-devsecops/ws25-team-cloudcommanders-acetlisto-cloudrun/ws25-cloudcommanders-acetlisto:latest"
+          docker build -t $IMAGE .
+
+      - name: Push Docker image to Artifact Registry
+        run: |
+          IMAGE="europe-west3-docker.pkg.dev/hs-heilbronn-devsecops/ws25-team-cloudcommanders-acetlisto-cloudrun/ws25-cloudcommanders-acetlisto:latest"
+          docker push $IMAGE
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: "ws25-cloudcommanders-acetlisto"
+          image: "europe-west3-docker.pkg.dev/hs-heilbronn-devsecops/ws25-team-cloudcommanders-acetlisto-cloudrun/ws25-cloudcommanders-acetlisto:latest"
+          region: "europe-west3"
+          allow-unauthenticated: true
