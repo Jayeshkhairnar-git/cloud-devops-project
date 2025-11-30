@@ -1,1 +1,140 @@
+name: Build, Docker Image and Deploy cloud run
 
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+jobs:
+  build-test-scan:
+    name: Build, Test, Scan, and Push to GHCR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set Up Go Environment
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+
+      - name: Cache Go Modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Download Dependencies
+        run: go mod download
+
+      - name: Run GolangCI-Lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+
+      - name: Run Unit Tests with Coverage
+        run: |
+          go test ./... -v -covermode=atomic -coverprofile=coverage.out
+          go tool cover -func=coverage.out
+
+      - name: Upload Coverage Report to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.out
+          fail_ci_if_error: true
+
+      - name: Install and Run Govulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          $HOME/go/bin/govulncheck ./... || true
+        continue-on-error: true
+
+      - name: Build Go Binary
+        run: |
+          mkdir -p ./bin
+          go build -v -o ./bin/app ./cmd/
+
+      - name: Upload Binary Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-binary
+          path: ./bin/app
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: jayeshkhairnar-git
+          password: ${{ secrets.GHCR_PAT }}
+
+      - name: Build and Push Docker Image to GHCR
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ghcr.io/jayeshkhairnar-git/go-app:${{ github.sha }}
+            ghcr.io/jayeshkhairnar-git/go-app:latest
+
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
+      - name: Authenticate Snyk
+        run: snyk auth ${{ secrets.SNYK_TOKEN }}
+
+      - name: Scan Go Project with Snyk
+        run: snyk test --all-projects --severity-threshold=medium
+
+      - name: Scan Docker Image with Snyk
+        run: snyk container test ghcr.io/jayeshkhairnar-git/go-app:latest --severity-threshold=medium
+
+
+  deploy-cloudrun:
+    name: Deploy to Google Cloud Run
+    needs: build-test-scan
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/70756149774/locations/global/workloadIdentityPools/github-actions/providers/github-repos'
+          service_account: 'ws25-student@hs-heilbronn-devsecops.iam.gserviceaccount.com'
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker europe-west3-docker.pkg.dev --quiet
+
+      - name: Build Docker image for Cloud Run
+        run: |
+          IMAGE="europe-west3-docker.pkg.dev/hs-heilbronn-devsecops/ws25-team-cloudcommanders-acetlisto-cloudrun/ws25-cloudcommanders-acetlisto:latest"
+          docker build -t $IMAGE .
+
+      - name: Push Docker image to Artifact Registry
+        run: |
+          IMAGE="europe-west3-docker.pkg.dev/hs-heilbronn-devsecops/ws25-team-cloudcommanders-acetlisto-cloudrun/ws25-cloudcommanders-acetlisto:latest"
+          docker push $IMAGE
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: "ws25-cloudcommanders-acetlisto"
+          image: "europe-west3-docker.pkg.dev/hs-heilbronn-devsecops/ws25-team-cloudcommanders-acetlisto-cloudrun/ws25-cloudcommanders-acetlisto:latest"
+          region: "europe-west3"
+          allow-unauthenticated: true
