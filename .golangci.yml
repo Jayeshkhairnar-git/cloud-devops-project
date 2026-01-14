@@ -1,5 +1,7 @@
 run:
   timeout: 5m
+  skip-dirs:
+    - internal/telemetry
 
 linters:
   enable:
@@ -10,7 +12,3 @@ linters:
 linters-settings:
   govet:
     enable-all: true
-
-issues:
-  exclude-dirs:
-    - internal/telemetry
