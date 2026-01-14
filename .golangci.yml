@@ -1,0 +1,16 @@
+run:
+  timeout: 5m
+
+linters:
+  enable:
+    - govet
+    - errcheck
+    - staticcheck
+
+linters-settings:
+  govet:
+    enable-all: true
+
+issues:
+  exclude-dirs:
+    - internal/telemetry
