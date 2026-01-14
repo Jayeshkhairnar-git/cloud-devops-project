@@ -5,16 +5,15 @@ import (
 	"os"
 
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+
+	"go.opentelemetry.io/contrib/exporters/trace/cloudtrace"
 )
 
 func InitTracer(serviceName string) (func(context.Context) error, error) {
-	exporter, err := stdouttrace.New(
-		stdouttrace.WithPrettyPrint(),
-	)
+	exporter, err := cloudtrace.New()
 	if err != nil {
 		return nil, err
 	}
