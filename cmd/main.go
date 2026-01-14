@@ -18,7 +18,7 @@ import (
 func main() {
     ctx := context.Background()
 
-	shutdown, err := telemetry.InitTracer("acetlisto")
+	shutdown, err := telemetry.InitTracer("acetlisto-service-cloudcommanders")
 	if err != nil {
 		log.Fatalf("failed to init tracer: %v", err)
 	}
