@@ -8,10 +8,14 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/hs-heilbronn-devsecops/acetlisto/stores"
+	
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
+
 )
 
 func New(store stores.ItemStore) *mux.Router {
 	r := mux.NewRouter()
+	r.Use(otelmux.Middleware("acetlisto"))
 
 	c := NewItemHandler(store)
 
