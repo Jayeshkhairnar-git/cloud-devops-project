@@ -42,7 +42,9 @@ jobs:
         uses: golangci/golangci-lint-action@v6
         continue-on-error: true
         with:
-        version: latest
+          version: latest
+          args: --timeout=5m
+
         
       - name: Run Unit Tests with Coverage
         run: |
