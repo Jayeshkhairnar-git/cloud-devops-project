@@ -5,21 +5,22 @@ import (
 	"os"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
-
-	"go.opentelemetry.io/contrib/exporters/trace/cloudtrace"
 )
 
 func InitTracer(serviceName string) (func(context.Context) error, error) {
-	exporter, err := cloudtrace.New()
+	ctx := context.Background()
+
+	exporter, err := otlptracegrpc.New(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	res, err := resource.New(
-		context.Background(),
+		ctx,
 		resource.WithAttributes(
 			semconv.ServiceName(serviceName),
 			semconv.DeploymentEnvironment("cloudrun"),
@@ -36,6 +37,5 @@ func InitTracer(serviceName string) (func(context.Context) error, error) {
 	)
 
 	otel.SetTracerProvider(tp)
-
 	return tp.Shutdown, nil
 }
