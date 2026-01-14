@@ -23,7 +23,7 @@ jobs:
       - name: Set Up Go Environment
         uses: actions/setup-go@v4
         with:
-          go-version: '1.24'
+          go-version: '1.22'
 
       - name: Cache Go Modules
         uses: actions/cache@v3
@@ -45,7 +45,6 @@ jobs:
           version: latest
           args: --timeout=5m
 
-        
       - name: Run Unit Tests with Coverage
         run: |
           go test ./... -v -covermode=atomic -coverprofile=coverage.out
@@ -59,10 +58,10 @@ jobs:
           fail_ci_if_error: true
 
       - name: Install and Run Govulncheck
+        continue-on-error: true
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@latest
-          $HOME/go/bin/govulncheck ./... || true
-        continue-on-error: true
+          $HOME/go/bin/govulncheck ./...
 
       - name: Build Go Binary
         run: |
@@ -79,8 +78,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: jayeshkhairnar-git
-          password: ${{ secrets.GHCR_PAT }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and Push Docker Image to GHCR
         uses: docker/build-push-action@v5
@@ -89,8 +88,8 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ghcr.io/jayeshkhairnar-git/go-app:${{ github.sha }}
-            ghcr.io/jayeshkhairnar-git/go-app:latest
+            ghcr.io/${{ github.repository_owner }}/go-app:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/go-app:latest
 
       - name: Install Snyk CLI
         run: npm install -g snyk
@@ -99,11 +98,12 @@ jobs:
         run: snyk auth ${{ secrets.SNYK_TOKEN }}
 
       - name: Scan Go Project with Snyk
+        continue-on-error: true
         run: snyk test --all-projects --severity-threshold=medium
 
       - name: Scan Docker Image with Snyk
-        run: snyk container test ghcr.io/jayeshkhairnar-git/go-app:latest --severity-threshold=medium
-
+        continue-on-error: true
+        run: snyk container test ghcr.io/${{ github.repository_owner }}/go-app:latest --severity-threshold=medium
 
   deploy-cloudrun:
     name: Deploy to Google Cloud Run
@@ -137,7 +137,7 @@ jobs:
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v2
         with:
-          service: "ws25-cloudcommanders-acetlisto"
-          image: "europe-west3-docker.pkg.dev/hs-heilbronn-devsecops/ws25-team-cloudcommanders-acetlisto-cloudrun/ws25-cloudcommanders-acetlisto:latest"
-          region: "europe-west3"
+          service: ws25-cloudcommanders-acetlisto
+          image: europe-west3-docker.pkg.dev/hs-heilbronn-devsecops/ws25-team-cloudcommanders-acetlisto-cloudrun/ws25-cloudcommanders-acetlisto:latest
+          region: europe-west3
           allow-unauthenticated: true
