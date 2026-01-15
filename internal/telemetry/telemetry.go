@@ -9,13 +9,11 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
-	
 )
 
 func InitTracer(serviceName string) (func(context.Context) error, error) {
 	ctx := context.Background()
 
-	// OTLP exporter (Cloud Run → Google Cloud Trace)
 	exporter, err := otlptracegrpc.New(
 		ctx,
 		otlptracegrpc.WithEndpoint("cloudtrace.googleapis.com:443"),
@@ -24,12 +22,13 @@ func InitTracer(serviceName string) (func(context.Context) error, error) {
 		return nil, err
 	}
 
-	// Resource defines service.name (THIS is what shows in Trace Explorer)
 	res, err := resource.New(
 		ctx,
+		resource.WithFromEnv(),
+		resource.WithFromSDK(),
 		resource.WithAttributes(
-			semconv.ServiceName(serviceName),
-			semconv.DeploymentEnvironment("cloudrun"),
+			semconv.ServiceNameKey.String(serviceName),
+			semconv.DeploymentEnvironmentKey.String("cloudrun"),
 		),
 	)
 	if err != nil {
