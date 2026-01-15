@@ -49,5 +49,3 @@ func InitTracer(serviceName string) (func(context.Context) error, error) {
 	return tp.Shutdown, nil
 }
 
-
-this is go code suggest me changes so that my teams name come in telementary service
