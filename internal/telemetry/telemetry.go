@@ -23,7 +23,7 @@ func initTracer(ctx context.Context) func(context.Context) error {
 	res, err := resource.New(
 		ctx,
 		resource.WithAttributes(
-			semconv.ServiceNameKey.String("mergemasters-acetlisto-service"),
+			semconv.ServiceNameKey.String("acetlisto-service-cloudcommanders"),
 		),
 	)
 	if err != nil {
