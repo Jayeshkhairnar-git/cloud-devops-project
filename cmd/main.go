@@ -12,13 +12,20 @@ import (
 	"github.com/hs-heilbronn-devsecops/acetlisto/handlers"
 	"github.com/hs-heilbronn-devsecops/acetlisto/stores"
 	"github.com/spf13/viper"
+
+	"github.com/hs-heilbronn-devsecops/acetlisto/internal/telemetry"
 )
 
 func main() {
 
 	ctx := context.Background()
 
-	shutdown := initTracer(ctx)
+	shutdown, err := telemetry.InitTracer("acetlisto-service-cloudcommanders")
+    if err != nil {
+	   log.Fatal(err)
+    }
+    defer shutdown(ctx)
+
 
 	defer func() {
 		if err := shutdown(ctx); err != nil {
