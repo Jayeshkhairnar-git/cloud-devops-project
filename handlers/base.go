@@ -19,7 +19,6 @@ func New(store stores.ItemStore) *mux.Router {
 
 	c := NewItemHandler(store)
 
-	// Routes
 	r.HandleFunc("/", homeHandler).Methods("GET")
 	r.HandleFunc("/items/", c.listItems).Methods("GET")
 	r.HandleFunc("/items/", c.createItem).Methods("POST")
