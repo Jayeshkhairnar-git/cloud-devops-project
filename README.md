@@ -3,7 +3,7 @@
 A demo API for shopping list
 
 
-## Development
+## Development :
 
 Create a GitHub codespace and run the following command:
 
