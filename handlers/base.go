@@ -8,14 +8,14 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/hs-heilbronn-devsecops/acetlisto/stores"
-	
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
-
 )
 
 func New(store stores.ItemStore) *mux.Router {
 	r := mux.NewRouter()
-	r.Use(otelmux.Middleware("acetlisto"))
+
+	
+	r.Use(otelmux.Middleware("acetlisto-service-cloudcommanders"))
 
 	c := NewItemHandler(store)
 
@@ -33,6 +33,7 @@ func New(store stores.ItemStore) *mux.Router {
 func homeHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/items/", http.StatusTemporaryRedirect)
 }
+
 func respondWithError(w http.ResponseWriter, code int, message string) {
 	respondWithJSON(w, code, map[string]string{"error": message})
 }
