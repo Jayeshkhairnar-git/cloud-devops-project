@@ -71,3 +71,17 @@ go run ./cmd
 ## Course Context
 
 Built as part of the **DevSecOps** module at Hochschule Heilbronn (Winter Semester 2025/26), covering CI/CD pipelines, container security, cloud deployment, and observability in a hands-on project environment.
+
+
+## Related Cloud Computing Projects
+
+As part of my Cloud Computing coursework at Hochschule Heilbronn, 
+I completed 5 hands-on exercises covering AWS and GCP:
+
+| Exercise | Technologies |
+|---|---|
+| AWS S3 Static Website + IAM + CloudTrail | AWS, S3, IAM |
+| AWS Lambda + API Gateway REST API | AWS Lambda, Python |
+| GCP Serverless App + Firestore | Cloud Functions, Firestore, Python |
+| GCP Data Pipeline + Kubernetes (GKE) | Pub/Sub, GKE Autopilot, Docker |
+| Infrastructure as Code with Terraform | Terraform, Cloud Run, VPC, IAM |
